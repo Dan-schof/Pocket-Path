@@ -1,41 +1,28 @@
+import engine
 import os
 
-# settings
 BUDGET = 50.00
 DAYS_LEFT = 7
 FILE_NAME = "history.txt"
 
-# 1. Load data from file (if it exists)
+# Load history
 history = []
 if os.path.exists(FILE_NAME):
     with open(FILE_NAME, "r") as f:
-        for line in f:
-            history.append(float(line.strip()))
+        history = [float(line.strip()) for line in f]
 
-# 2. Get new spend and save it
-new_spend = float(input("how much did you spend today? "))
+# Get user data
+new_spend = float(input("Spend today: "))
 history.append(new_spend)
 
+# Save to file
 with open(FILE_NAME, "a") as f:
     f.write(f"{new_spend}\n")
 
-# 3. Calculations
-def get_stats(bal, spend_list, days):
-    total_spent = sum(spend_list)
-    rem = bal - total_spent
-    avg_spend = total_spent / len(spend_list)
-    
-    if avg_spend > 0:
-        survival = rem / avg_spend
-    else:
-        survival = float('inf')
-        
-    return rem, survival, total_spent
+# CALL THE ENGINE
+rem, days_left, total = engine.calculate_stats(BUDGET, history, DAYS_LEFT)
 
-# run it
-left, days_survived, total = get_stats(BUDGET, history, DAYS_LEFT)
-
-print(f"--- Session Saved ---")
-print(f"Total spent so far: {total:.2f}")
-print(f"Money left: {left:.2f}")
-print(f"Days left (based on average): {days_survived:.1f}")
+print(f"\n--- PocketPath Report ---")
+print(f"Balance: £{rem:.2f}")
+print(f"Runway: {days_left:.1f} days")
+print(f"Status: {'CRITICAL' if rem < 10 else 'HEALTHY'}")average): {days_survived:.1f}")
