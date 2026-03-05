@@ -1,32 +1,37 @@
-# --- Configuration (Constants) ---
-BUDGET_LIMIT = 50.00
-DAYS_UNTIL_ALLOWANCE = 7
+# settings
+BUDGET = 50.00
+DAYS_LEFT = 7
 
-# --- User Input (Variables) ---
-spent_today = 6.50 
+# list to store spending history
+history = [5.50, 2.00, 12.00] 
 
-# --- Logic Engine ---
-def calculate_status(balance, spend, days_left):
-    daily_allowance = balance / days_left
-    remaining_balance = balance - spend
+# get new input
+new_spend = float(input("how much did you spend today? "))
+history.append(new_spend)
+
+def get_stats(bal, spend_list, days):
+    total_spent = sum(spend_list)
+    rem = bal - total_spent
+    allowance = bal / days
     
-    # Logic to prevent DivisionByZero error
-    if spend > 0:
-        survival_days = remaining_balance / spend
+    # average spend per day
+    avg_spend = total_spent / len(spend_list)
+    
+    if avg_spend > 0:
+        survival = rem / avg_spend
     else:
-        survival_days = float('inf')
+        survival = float('inf')
         
-    return daily_allowance, remaining_balance, survival_days
+    return allowance, rem, survival, total_spent
 
-# --- Execution ---
-allowance, rem, survival = calculate_status(BUDGET_LIMIT, spent_today, DAYS_UNTIL_ALLOWANCE)
+# run it
+limit, left, days_survived, total = get_stats(BUDGET, history, DAYS_LEFT)
 
-# --- Output ---
-print(f"Daily Allowance: £{allowance:.2f}")
-print(f"Remaining: £{rem:.2f}")
-print(f"Survival: {survival:.1f} days")
+print(f"Total spent so far: {total:.2f}")
+print(f"Money left: {left:.2f}")
+print(f"Days left (based on average): {days_survived:.1f}")
 
-if spent_today > allowance:
-    print("STATUS: OVERSPENT")
+if total > BUDGET:
+    print("overspent")
 else:
-    print("STATUS: WITHIN LIMIT")
+    print("on track")
