@@ -71,5 +71,4 @@ def home():
     rem, runway, total = get_stats()
     return render_template_string(HTML_TEMPLATE, rem=rem, runway=runway, total=total)
 
-if __name__ == "__main__":
-    app.run()
+
