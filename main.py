@@ -21,7 +21,7 @@ def get_stats():
     avg_spend = total / len(history) if history else 0
     runway = rem / avg_spend if avg_spend > 0 else DAYS_LEFT
 
-    recent = history[-5:][::-1] # last 5 transactions, newest first
+    recent = history[-5:] # last 5 transactions, newest first
 
     return rem, runway, total, avg_spend, recent
 
