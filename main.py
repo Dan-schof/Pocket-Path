@@ -12,139 +12,102 @@ def get_stats():
     history = []
 
     if os.path.exists(FILE_NAME):
-        with open(FILE_NAME, "r") as f:
-            history = [float(line.strip()) for line in f.readlines() if line.strip()]
+        with open(FILE_NAME) as f:
+            for line in f:
+                if line.strip():
+                    amount, category = line.strip().split(",")
+                    history.append((float(amount), category))
 
-    total = sum(history)
+    total = sum(x[0] for x in history)
     rem = BUDGET - total
 
     avg_spend = total / len(history) if history else 0
     runway = rem / avg_spend if avg_spend > 0 else DAYS_LEFT
 
-    recent = history[-5:] # last 5 transactions, newest first
+    recent = list(reversed(history[-5:]))
 
-    return rem, runway, total, avg_spend, recent
+    # category totals
+    categories = {}
+    for amount, category in history:
+        categories[category] = categories.get(category, 0) + amount
+
+    return rem, runway, total, avg_spend, recent, categories
 
 
 HTML_TEMPLATE = """
-<!DOCTYPE html>
 <html>
 <head>
-<title>PocketPath Control</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-body {
-    font-family: sans-serif;
-    background: #121212;
-    color: white;
-    text-align: center;
-}
-
-.card {
-    background: #1e1e1e;
-    padding: 20px;
-    border-radius: 15px;
-    border: 1px solid #333;
-    width: 90%;
-    max-width: 400px;
-    margin: auto;
-}
-
-.stat {
-    font-size: 1.4em;
-    margin: 10px 0;
-}
-
-.critical {
-    color: #ff4444;
-    font-weight: bold;
-}
-
-.ontrack {
-    color: #00c851;
-    font-weight: bold;
-}
-
-input {
-    padding: 10px;
-    border-radius: 5px;
-    border: none;
-    width: 80%;
-}
-
-button {
-    padding: 10px 20px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    margin-top: 10px;
-}
-
-.transactions {
-    margin-top: 20px;
-    text-align: left;
-}
-</style>
+<title>PocketPath</title>
 </head>
 
-<body>
-
-<div class="card">
+<body style="background:#121212;color:white;text-align:center;font-family:sans-serif;">
 
 <h2>PocketPath Report</h2>
 
-<div class="stat">Total Spent: £{{ "%.2f"|format(total) }}</div>
-<div class="stat">Money Left: £{{ "%.2f"|format(rem) }}</div>
-<div class="stat">Average Daily Spend: £{{ "%.2f"|format(avg) }}</div>
-<div class="stat">Runway: {{ "%.1f"|format(runway) }} days</div>
+<p>Total Spent: £{{ "%.2f"|format(total) }}</p>
+<p>Money Left: £{{ "%.2f"|format(rem) }}</p>
+<p>Average Daily Spend: £{{ "%.2f"|format(avg) }}</p>
+<p>Runway: {{ "%.1f"|format(runway) }} days</p>
 
-<p class="{{ 'critical' if rem < 10 else 'ontrack' }}">
-STATUS: {{ "CRITICAL - SLOW DOWN" if rem < 10 else "ON TRACK" }}
+<p>
+{{ "CRITICAL - SLOW DOWN" if rem < 10 else "ON TRACK" }}
 </p>
 
-<hr style="border:0.5px solid #333; margin:20px 0;">
+<hr>
 
 <form method="POST">
-<input type="number" step="0.01" name="spend" placeholder="Enter amount £">
-<br>
-<button type="submit">Update Spend</button>
+
+<input type="number" step="0.01" name="spend" placeholder="Amount £" required>
+<br><br>
+
+<select name="category">
+<option value="Food">Food</option>
+<option value="Transport">Transport</option>
+<option value="Shopping">Shopping</option>
+<option value="Entertainment">Entertainment</option>
+<option value="Other">Other</option>
+</select>
+
+<br><br>
+
+<button type="submit">Add Transaction</button>
+
 </form>
 
-<div class="transactions">
+<hr>
+
 <h3>Recent Transactions</h3>
 
-{% if recent %}
-<ul>
-{% for t in recent %}
-<li>£{{ "%.2f"|format(t) }}</li>
+{% for amount, category in recent %}
+<p>£{{ "%.2f"|format(amount) }} - {{ category }}</p>
 {% endfor %}
-</ul>
-{% else %}
-<p>No transactions yet</p>
-{% endif %}
 
-</div>
+<hr>
 
-</div>
+<h3>Spending Breakdown</h3>
+
+{% for category, amount in categories.items() %}
+<p>{{ category }}: £{{ "%.2f"|format(amount) }}</p>
+{% endfor %}
 
 </body>
 </html>
 """
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET","POST"])
 def home():
 
     if request.method == "POST":
-        new_spend = request.form.get("spend")
 
-        if new_spend:
+        amount = request.form.get("spend")
+        category = request.form.get("category")
+
+        if amount and category:
             with open(FILE_NAME, "a") as f:
-                f.write(f"{new_spend}\n")
+                f.write(f"{amount},{category}\\n")
 
-    rem, runway, total, avg_spend, recent = get_stats()
+    rem, runway, total, avg_spend, recent, categories = get_stats()
 
     return render_template_string(
         HTML_TEMPLATE,
@@ -152,7 +115,8 @@ def home():
         runway=runway,
         total=total,
         avg=avg_spend,
-        recent=recent
+        recent=recent,
+        categories=categories
     )
 
 
